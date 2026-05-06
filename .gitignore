@@ -1,0 +1,54 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Laravel
+/public/hot
+/public/storage
+/public/build
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+/database/database.sqlite
+
+# Logs
+*.log
+
+# Ignore generated storage files
+/storage/app/public
+/storage/debugbar
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Keep folder structure
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/testing/.gitignore
+!/storage/framework/views/.gitignore
+!/storage/logs/.gitignore
+
+# Bootstrap cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Vite
+vite.config.js.timestamp-*
+
+# Temp
+*.tmp
+*.temp
