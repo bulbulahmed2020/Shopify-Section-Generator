@@ -8,9 +8,12 @@ class OpenAIProvider implements AIProviderInterface
 {
     private Client $client;
 
-    public function __construct()
+    private string $model;
+
+    public function __construct(string $model = null)
     {
         $this->client = \OpenAI::client(env('OPENAI_API_KEY'));
+        $this->model = $model ?? env('OPENAI_MODEL', 'gpt-4o');
     }
 
     public function generateSection(string $prompt): array
@@ -19,7 +22,7 @@ class OpenAIProvider implements AIProviderInterface
 
         try {
             $response = $this->client->chat()->create([
-                'model' => env('OPENAI_MODEL', 'gpt-4o'),
+                'model' => $this->model,
                 'messages' => [
                     [
                         'role' => 'system',
@@ -46,12 +49,32 @@ class OpenAIProvider implements AIProviderInterface
 
     public function getName(): string
     {
-        return 'OpenAI';
+        return 'OpenAI (GPT)';
     }
 
     public function isConfigured(): bool
     {
         return !empty(env('OPENAI_API_KEY'));
+    }
+
+    public function getModels(): array
+    {
+        return [
+            'gpt-4o' => 'GPT-4o',
+            'gpt-4o-mini' => 'GPT-4o Mini',
+            'gpt-4-turbo' => 'GPT-4 Turbo',
+            'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
+        ];
+    }
+
+    public function setModel(string $model): void
+    {
+        $this->model = $model;
+    }
+
+    public function getModel(): string
+    {
+        return $this->model;
     }
 
     private function getSystemPrompt(): string

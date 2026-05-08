@@ -7,8 +7,9 @@ use GuzzleHttp\Client as HttpClient;
 class GrokProvider implements AIProviderInterface
 {
     private HttpClient $client;
+    private string $model;
 
-    public function __construct()
+    public function __construct(string $model = null)
     {
         $this->client = new HttpClient([
             'base_uri' => 'https://api.x.ai/v1/',
@@ -17,6 +18,7 @@ class GrokProvider implements AIProviderInterface
                 'Content-Type' => 'application/json',
             ],
         ]);
+        $this->model = $model ?? env('GROK_MODEL', 'grok-2-latest');
     }
 
     public function generateSection(string $prompt): array
@@ -26,7 +28,7 @@ class GrokProvider implements AIProviderInterface
         try {
             $response = $this->client->post('chat/completions', [
                 'json' => [
-                    'model' => env('GROK_MODEL', 'grok-vision-beta'),
+                    'model' => $this->model,
                     'messages' => [
                         [
                             'role' => 'system',
@@ -61,6 +63,25 @@ class GrokProvider implements AIProviderInterface
     public function isConfigured(): bool
     {
         return !empty(env('GROK_API_KEY'));
+    }
+
+    public function getModels(): array
+    {
+        return [
+            'grok-2-latest' => 'Grok 2 Latest',
+            'grok-2' => 'Grok 2',
+            'grok-vision-beta' => 'Grok Vision Beta',
+        ];
+    }
+
+    public function setModel(string $model): void
+    {
+        $this->model = $model;
+    }
+
+    public function getModel(): string
+    {
+        return $this->model;
     }
 
     private function getSystemPrompt(): string

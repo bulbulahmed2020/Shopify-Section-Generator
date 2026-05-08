@@ -26,10 +26,17 @@ class SectionGeneratorController extends Controller
 
         $currentProvider = $this->service->getCurrentProvider();
 
+        $models = [];
+        $configuredProviders = $this->service->getAvailableProviders();
+        foreach ($configuredProviders as $key => $name) {
+            $models[$key] = $this->service->getModelsForProvider($key);
+        }
+
         return view('generator', [
             'presets' => $presets,
             'providers' => $providers,
             'currentProvider' => $currentProvider,
+            'models' => $models,
         ]);
     }
 
@@ -54,6 +61,11 @@ class SectionGeneratorController extends Controller
                 'in:openai,openrouter,gemini,grok'
             ],
 
+            'model' => [
+                'nullable',
+                'string',
+            ],
+
         ]);
 
         // Create Service
@@ -63,7 +75,8 @@ class SectionGeneratorController extends Controller
 
         // Generate
         $result = $service->generateSection(
-            $validated['prompt']
+            $validated['prompt'],
+            $validated['model'] ?? null
         );
 
         // Error handling

@@ -46,7 +46,10 @@ form.addEventListener('submit', async function (e)
                 prompt: prompt.value,
 
                 provider:
-                    document.getElementById('provider')?.value
+                    document.getElementById('provider')?.value,
+
+                model:
+                    document.getElementById('model')?.value || null,
             })
         });
 
@@ -90,6 +93,10 @@ function showLoading(show)
     generateBtn.disabled = show;
 
     generateBtn.style.opacity = show ? '0.6' : '1';
+
+    generateBtn.textContent = show
+        ? '⏳ Generating...'
+        : '✨ Generate Section';
 }
 
 function showError(message)
@@ -165,6 +172,39 @@ function updateCharCount()
     count.textContent =
         prompt.value.length + ' / 2000 characters';
 }
+
+function updateModels()
+{
+    const providerSelect =
+        document.getElementById('provider');
+
+    const modelSelect =
+        document.getElementById('model');
+
+    if (!providerSelect || !modelSelect) return;
+
+    const selectedProvider = providerSelect.value;
+
+    // Get models for this provider from window.__MODELS
+    const providerModels = window.__MODELS?.[selectedProvider] || {};
+
+    // Clear current options
+    modelSelect.innerHTML = '<option value="">Default Model</option>';
+
+    // Add new options
+    Object.keys(providerModels).forEach(function(modelKey) {
+        const option = document.createElement('option');
+        option.value = modelKey;
+        option.textContent = providerModels[modelKey];
+        modelSelect.appendChild(option);
+    });
+}
+
+// Initialize models when page loads
+document.addEventListener('DOMContentLoaded', function()
+{
+    updateModels();
+});
 
 prompt.addEventListener(
     'input',

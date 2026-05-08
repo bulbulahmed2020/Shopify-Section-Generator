@@ -18,4 +18,19 @@ interface AIProviderInterface
      * Check if provider is configured
      */
     public function isConfigured(): bool;
+
+    /**
+     * Get available models for this provider
+     */
+    public function getModels(): array;
+
+    /**
+     * Set the model to use
+     */
+    public function setModel(string $model): void;
+
+    /**
+     * Get current model
+     */
+    public function getModel(): string;
 }

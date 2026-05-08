@@ -14,11 +14,23 @@ class SectionGeneratorService
     /**
      * Generate Shopify section from user prompt
      */
-    public function generateSection(string $prompt): array
+    public function generateSection(string $prompt, string $model = null): array
     {
+        if ($model) {
+            $this->provider->setModel($model);
+        }
+
         return $this->provider->generateSection($prompt);
     }
-
+    
+    /**
+     * Get models for a specific provider
+     */
+    public function getModelsForProvider(string $provider): array
+    {
+        return AIProviderFactory::getModelsForProvider($provider);
+    }
+    
     /**
      * Get available providers
      */

@@ -11,10 +11,10 @@ class GeminiProvider implements AIProviderInterface
     private string $apiKey;
     private string $model;
 
-    public function __construct()
+    public function __construct(string $model = null)
     {
         $this->apiKey = env('GEMINI_API_KEY', '');
-        $this->model = env('GEMINI_MODEL', 'gemini-2.5-flash-lite');
+        $this->model = $model ?? env('GEMINI_MODEL', 'gemini-2.5-flash-lite');
 
         $this->client = new HttpClient([
             'timeout' => 60,
@@ -66,7 +66,7 @@ class GeminiProvider implements AIProviderInterface
 
                             'generationConfig' => [
                                 'temperature' => 0.3,
-                                'maxOutputTokens' => 2000,
+                                'maxOutputTokens' => 8192,
 
                                 // Important
                                 'responseMimeType' => 'application/json',
@@ -150,6 +150,26 @@ class GeminiProvider implements AIProviderInterface
         return !empty($this->apiKey);
     }
 
+    public function getModels(): array
+    {
+        return [
+            'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite',
+            'gemini-2.5-pro' => 'Gemini 2.5 Pro',
+            'gemini-1.5-pro' => 'Gemini 1.5 Pro',
+            'gemini-1.5-flash' => 'Gemini 1.5 Flash',
+        ];
+    }
+
+    public function setModel(string $model): void
+    {
+        $this->model = $model;
+    }
+
+    public function getModel(): string
+    {
+        return $this->model;
+    }
+
    private function getSystemPrompt(): string
 {
     return <<<'PROMPT'
@@ -206,55 +226,44 @@ PROMPT;
     {
         try {
 
-            // Remove markdown if Gemini still returns it
-            $content = str_replace(
-                '```json',
-                '',
-                $content
-            );
-
-            $content = str_replace(
-                '```',
-                '',
-                $content
-            );
-
+            // Remove markdown code fences if Gemini still returns them
+            $content = preg_replace('/```(?:json)?\s*/i', '', $content);
             $content = trim($content);
 
-            // Escape invalid raw newlines/tabs inside JSON strings
-            $content = preg_replace_callback(
-
-                '/"((?:\\\\.|[^"\\\\])*)"/s',
-
-                function ($matches) {
-
-                    $string = $matches[1];
-
-                    $string = str_replace(
-                        ["\r", "\n", "\t"],
-                        ['\\r', '\\n', '\\t'],
-                        $string
-                    );
-
-                    return '"' . $string . '"';
-                },
-
-                $content
-            );
-
+            // Try direct JSON decode first
             $decoded = json_decode($content, true);
 
-            if (
-                json_last_error() !== JSON_ERROR_NONE
-            ) {
-
-                return [
-                    'error' => 'JSON Decode Error: ' . json_last_error_msg(),
-                    'raw_json' => substr($content, 0, 5000),
-                ];
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $this->validateResponse($decoded);
             }
 
-            return $this->validateResponse($decoded);
+            // Fallback: extract JSON object from content
+            if (preg_match('/\{[\s\S]*\}/', $content, $matches)) {
+                $extracted = $matches[0];
+                $decoded = json_decode($extracted, true);
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $this->validateResponse($decoded);
+                }
+            }
+
+            // Last resort: try to fix common JSON issues
+            // Replace unescaped control characters
+            $cleaned = preg_replace('/[^\x20-\x7E]/', '', $content);
+            
+            // Try extracting JSON from cleaned content
+            if (preg_match('/\{[\s\S]*\}/', $cleaned, $matches)) {
+                $decoded = json_decode($matches[0], true);
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $this->validateResponse($decoded);
+                }
+            }
+
+            return [
+                'error' => 'JSON Decode Error: ' . json_last_error_msg(),
+                'raw_json' => substr($content, 0, 5000),
+            ];
 
         } catch (\Throwable $e) {
 

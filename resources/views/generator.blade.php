@@ -90,6 +90,7 @@
                         <select
                             id="provider"
                             name="provider"
+                            onchange="updateModels()"
                             class="w-full border-2 border-gray-300 rounded-lg p-3 focus:border-blue-500 focus:outline-none bg-white"
                         >
 
@@ -109,6 +110,31 @@
                     </div>
 
                     @endif
+
+                    <!-- Model -->
+                    <div id="modelGroup">
+
+                        <label class="block font-semibold mb-2">
+                            AI Model
+                        </label>
+
+                        <select
+                            id="model"
+                            name="model"
+                            class="w-full border-2 border-gray-300 rounded-lg p-3 focus:border-blue-500 focus:outline-none bg-white"
+                        >
+                            <option value="">Default Model</option>
+                            @if(!empty($models))
+                                @php
+                                    $firstProvider = array_key_first($providers);
+                                @endphp
+                                @foreach($models[$firstProvider] ?? [] as $modelKey => $modelName)
+                                <option value="{{ $modelKey }}">{{ $modelName }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+
+                    </div>
 
                     <!-- BUTTON -->
                     <button
@@ -241,6 +267,11 @@
     </div>
 
 </div>
+
+<script>
+    // Pass models data to global scope for JS to use
+    window.__MODELS = @json($models);
+</script>
 
 <script src="{{ asset('js/generator.js') }}"></script>
 
