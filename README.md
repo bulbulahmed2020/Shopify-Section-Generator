@@ -1,10 +1,11 @@
 # Shopify Section Generator 🛍️
 
-A minimal but clean MVP web app built with **Laravel** and **Blade templates** that generates Shopify sections using AI.
+A minimal but clean MVP web app built with **Laravel 11** and **Blade templates** that generates Shopify sections using AI.
 
 ## Features
 
-✨ **AI-Powered Generation**: Uses OpenAI to generate Shopify sections based on user descriptions  
+✨ **Multi-AI Provider Support**: Choose from OpenAI, Google Gemini, OpenRouter, or Grok  
+🤖 **AI-Powered Generation**: Generates Shopify sections based on user descriptions  
 📋 **Complete Output**: Generates section name, schema, Liquid code, and CSS  
 ⚡ **Quick Presets**: 5 pre-built preset templates (FAQ, Banner, Product, Testimonials, CTA)  
 📋 **Easy Copy**: One-click copy buttons for all generated code  
@@ -15,9 +16,10 @@ A minimal but clean MVP web app built with **Laravel** and **Blade templates** t
 ## Prerequisites
 
 - **PHP 8.1+**
+- **Laravel 11.x**
 - **Composer**
 - **Node.js & npm** (optional, for frontend)
-- **OpenAI API Key**
+- **At least one AI Provider API Key** (OpenAI, Gemini, OpenRouter, or Grok)
 
 ## Installation
 
@@ -41,11 +43,28 @@ Copy `.env` and configure it:
 cp .env.example .env
 ```
 
-Edit `.env` and add your OpenAI API key:
+Edit `.env` and configure your preferred AI provider:
 
 ```env
+# Choose default provider: openai, gemini, openrouter, or grok
+AI_PROVIDER=openai
+
+# OpenAI (GPT)
 OPENAI_API_KEY=sk-your-api-key-here
 OPENAI_MODEL=gpt-4o
+
+# Google Gemini (alternative)
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-2.5-flash-lite
+
+# OpenRouter (alternative - multi-provider access)
+OPENROUTER_API_KEY=your-openrouter-api-key-here
+OPENROUTER_MODEL=deepseek/deepseek-chat
+
+# Grok (alternative - xAI)
+GROK_API_KEY=your-grok-api-key-here
+GROK_MODEL=grok-2-latest
+
 APP_KEY=base64:your-key-here
 ```
 
@@ -69,54 +88,103 @@ The app will be available at: **http://localhost:8000**
 shopify-generator/
 ├── app/
 │   ├── Http/
-│   │   └── Controllers/
-│   │       └── SectionGeneratorController.php
+│   │   ├── Controllers/
+│   │   │   ├── Controller.php
+│   │   │   └── SectionGeneratorController.php
+│   │   └── Middleware/
 │   └── Services/
-│       └── SectionGeneratorService.php
+│       ├── AIProviderFactory.php
+│       ├── SectionGeneratorService.php
+│       └── Providers/
+│           ├── AIProviderInterface.php
+│           ├── OpenAIProvider.php
+│           ├── GeminiProvider.php
+│           ├── OpenRouterProvider.php
+│           └── GrokProvider.php
 ├── config/
+│   ├── ai.php
 │   └── app.php
 ├── resources/
+│   ├── css/
+│   │   └── app.css
+│   ├── js/
+│   │   └── app.js
 │   └── views/
 │       └── generator.blade.php
 ├── routes/
-│   └── web.php
-├── public/
-│   └── index.php
+│   ├── web.php
+│   └── console.php
 ├── bootstrap/
 │   └── app.php
+├── public/
+│   ├── index.php
+│   └── build/
+├── storage/
+│   ├── framework/
+│   │   ├── cache/
+│   │   ├── sessions/
+│   │   └── views/
+│   └── logs/
+├── database/
+├── vite.config.js
+├── tailwind.config.js
+├── postcss.config.js
 ├── composer.json
-└── .env
+├── package.json
+├── .env.example
+└── README.md
 ```
 
 ## How It Works
 
-### 1. **SectionGeneratorService** (`app/Services/SectionGeneratorService.php`)
+### 1. **AIProviderFactory** (`app/Services/AIProviderFactory.php`)
 
-- Communicates with OpenAI API
-- Sends a carefully crafted system prompt
-- Parses the AI response into structured JSON
-- Validates the generated section
+- Factory pattern for creating AI provider instances
+- Dynamically selects provider based on `AI_PROVIDER` configuration
+- Supports OpenAI, Google Gemini, OpenRouter, and Grok
+- Validates provider configuration availability
+
+**Supported Providers:**
+- **OpenAI**: GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo
+- **Google Gemini**: Gemini 2.0 Flash, Gemini 2.5 Flash
+- **OpenRouter**: Multi-provider access (Claude, Llama, etc.)
+- **Grok**: Grok 2.0 via X.AI
+
+### 2. **Provider Interface** (`app/Services/Providers/AIProviderInterface.php`)
+
+- Standardized interface for all AI providers
+- Methods: `generateSection()`, `getName()`, `isConfigured()`, `getModels()`, `setModel()`
+- Ensures consistent behavior across different AI services
+
+### 3. **SectionGeneratorService** (`app/Services/SectionGeneratorService.php`)
+
+- Uses AIProviderFactory to get the configured provider
+- Sends carefully crafted system prompt to generate sections
+- Parses AI response into structured JSON
+- Validates generated Shopify sections
 
 **Key Features:**
 - System prompt ensures Shopify-compatible output
 - Handles API errors gracefully
 - Includes 5 preset templates
+- Provider-agnostic implementation
 
-### 2. **SectionGeneratorController** (`app/Http/Controllers/SectionGeneratorController.php`)
+### 4. **SectionGeneratorController** (`app/Http/Controllers/SectionGeneratorController.php`)
 
-- `index()` - Displays the form with presets
+- `index()` - Displays form with presets and available providers
 - `generate()` - Processes user input and returns generated section
 - Validates input (required, 10-2000 characters)
-- Returns JSON response
+- Returns JSON response with error handling
 
-### 3. **Blade View** (`resources/views/generator.blade.php`)
+### 5. **Blade View** (`resources/views/generator.blade.php`)
 
-- Modern, responsive interface
-- Real-time character counter
-- 5 quick preset buttons
+- Modern, responsive interface with Tailwind CSS
+- Real-time character counter with 2000 char limit
+- 5 quick preset buttons for instant templates
+- Provider selector dropdown
 - Loading state during generation
 - Copy buttons for each output section
-- Error message display
+- Error message display with retry option
 - Input preservation
 
 ## API Endpoints
@@ -187,18 +255,35 @@ The AI generates sections in this JSON format:
       {
         "type": "item",
         "name": "Item",
-        "settings": [...]
-      }
-    ],
-    "presets": [
-      {
-        "name": "Default",
-        "settings": {},
-        "blocks": []
-      }
-    ]
-  },
-  "liquid": "{% section 'section-name' %}\n...",
+# Application
+APP_NAME=Shopify Section Generator
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# AI Configuration
+AI_PROVIDER=openai                           # Default: openai, gemini, openrouter, or grok
+OPENAI_API_KEY=sk-your-key
+OPENAI_MODEL=gpt-4o
+GEMINI_API_KEY=your-gemini-key
+GEMINI_MODEL=gemini-2.5-flash-lite
+OPENROUTER_API_KEY=your-openrouter-key
+OPENROUTER_MODEL=deepseek/deepseek-chat
+GROK_API_KEY=your-grok-key
+GROK_MODEL=grok-2-latest
+
+# Database (SQLite by default)
+DB_CONNECTION=sqlite
+DB_DATABASE=database.sqlite
+
+# Cache & Session
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+```
+
+### Customizing AI Generation
+
+Edit the `getSystemPrompt()` method in `SectionGeneratorService.php` to customize how the AI generates sections. The system prompt is provider-agnostic and works across all supported AI service
   "css": "section { ... }"
 }
 ```
@@ -294,33 +379,64 @@ APP_DEBUG=true
 
 ## Troubleshooting
 
-### "PHP is not recognized"
+### AI Provider Selection
+
+The app automatically detects which providers are configured. To change providers:
+
+1. **Set your preferred default provider** in `.env`:
+   ```env
+   AI_PROVIDER=openai
+   ```
+
+2. **Available Provider Options:**
+   - `openai` - Most reliable, highest quality output (requires credits)
+   - `gemini` - Fast and cost-effective, Google's latest models
+   - `openrouter` - Multi-model access, flexible options
+   - `grok` - Latest open-source based models
+
+3. **Switching providers:** Simply update `AI_PROVIDER` in `.env` and restart the server.
+
+### Common Issues
+
+**"Provider not configured"**
+- Ensure you've added the API key for your chosen provider in `.env`
+- Check that `AI_PROVIDER` is set to a configured provider
+- Restart the development server: `php artisan serve`
+
+**"PHP is not recognized"**
 - Install PHP or add it to your system PATH
 - Download from: https://www.php.net/downloads
 
-### "Composer not found"
+**"Composer not found"**
 - Install Composer from: https://getcomposer.org/download/
 
-### "OpenAI API key not working"
-- Verify your API key in `.env`
-- Check your OpenAI account has credits
-- Use correct model name (gpt-4o, gpt-4-turbo, gpt-3.5-turbo)
+**"API key not working"**
+- Verify your API key is correct in `.env`
+- Check that your account has credits/active subscription
+- For OpenAI: https://platform.openai.com/account/usage/overview
+- For Gemini: https://aistudio.google.com
+- For OpenRouter: https://openrouter.ai/account/usage
+- For Grok: https://console.x.ai
 
-### "Cannot connect to OpenAI"
+**"Cannot connect to AI service"**
 - Check your internet connection
-- Verify OpenAI API endpoint is reachable
+- Verify API endpoint is reachable
 - Check firewall/proxy settings
+- Try a different provider as backup
 
 ## Customization Ideas
 
--🎨 Add CSS framework integration (Tailwind, Bootstrap)
-- 🔄 Add section regeneration options
+- 🔄 Add provider switcher in UI (allow users to choose AI provider per request)
+- 🎨 Add CSS framework integration (Tailwind presets, Bootstrap themes)
 - 💾 Save generated sections to database
-- 📤 Export sections to file (JSON, ZIP)
-- 🔐 Add user authentication
+- 📤 Export sections to file (JSON, ZIP, Liquid files)
+- 🔐 Add user authentication and section history
 - 🌙 Add dark/light theme toggle
-- 📊 Add usage analytics
-- 🎯 Add advanced prompt options (style, complexity)
+- 📊 Add usage analytics and API cost tracking
+- 🎯 Add advanced prompt options (style, complexity, section type)
+- 🧪 Add section preview/live testing before export
+- 🔗 Add section versioning and comparison
+- 📚 Add documentation generation for sections
 
 ## Performance Tips
 
@@ -350,4 +466,4 @@ For issues with:
 
 ---
 
-**Built with ❤️ Using Laravel and Blade**
+**Built with ❤️ Using Laravel 11 and Blade**
